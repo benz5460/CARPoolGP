@@ -29,7 +29,7 @@ class VWKernel(kernels.Kernel):
 
     def evaluate(self, X1, X2):
         x = jnp.atleast_1d(jnp.sqrt((X2 - X1)**2))
-        return jnp.prod(self.amp * jnp.exp(-0.5 * x**2 / self.scale**2))
+        return jnp.prod(self.amp * jnp.exp(-0.5 * x**2/self.scale**2))
     
 class XKernel(kernels.Kernel):
     """
@@ -42,20 +42,18 @@ class XKernel(kernels.Kernel):
 
     def evaluate(self, X1, X2):
         x = jnp.atleast_1d(jnp.sqrt((X2 - X1)**2))
-        return jnp.prod(self.amp*jnp.exp(-0.5 * (x**2 + self.deltaP) / self.scale**2))
+        return jnp.prod(self.amp*jnp.exp(-0.5 * (x**2 + self.deltaP)/self.scale**2))
     
 class EKernel(kernels.Kernel):
     """
     Custom kernel for carpool that can take N-dimensional scale. This is realy just a linear 
     exponential kernel
     """
-    def __init__(self, amp, scale):
+    def __init__(self, scale):
         self.scale = jnp.atleast_1d(scale)
-        self.amp     = jnp.atleast_1d(amp)
-
-
+        
     def evaluate(self, X1, X2):
         x = jnp.atleast_1d(jnp.sqrt((X2 - X1)**2))
-        return jnp.prod(self.amp * jnp.exp(-0.5 * x / self.scale**2))
+        return jnp.prod(jnp.exp(-0.5 * x/ self.scale**2))
     
 
