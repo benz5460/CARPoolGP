@@ -27,6 +27,7 @@ class Emulator:
         self.param_dimensions = self.Simulations.parameter_dimensions
         self.Surrogate_locs = np.unique(Surrogates.parameters, axis=0).reshape(-1, self.param_dimensions)
         self.params = None
+        self.losses = []
     
 
     def train(self, params=None, learning_rate=0.0, max_iterations=1000):
@@ -39,6 +40,8 @@ class Emulator:
         **kwargs : dict
             Keyword arguments for the emulator.
         """
+        # TODO: Implement break if params is None
+        loss_list = []
         if params is None:
             if self.params is None:
                 params = {"log_scaleV"   :0.1*np.ones(self.param_dimensions),
@@ -59,15 +62,20 @@ class Emulator:
         
         opt = optax.sgd(learning_rate=learning_rate)
         opt_state = opt.init(params)
+        self.param_evolution = []
         Y = jnp.concatenate([self.Simulations.quantities, self.Surrogates.quantities])
         for i in range(max_iterations):
-            _, grads = CARPoolProcess.loss(params, 
+            loss, grads = CARPoolProcess.loss(params, 
                                                   jnp.array(self.Simulations.parameters), 
                                                   jnp.array(self.Surrogates.parameters), 
                                                   Y)
             updates, opt_state = opt.update(grads, opt_state)
             params = optax.apply_updates(params, updates)
+            self.param_evolution.append(params)
+            # self.check_params(params) # TODO: Implement check_params
+            loss_list.append(loss)
         self.params = params
+        self.losses.append(loss_list)
         return params
 
     def predict(self, desired_parameters):
@@ -105,8 +113,6 @@ class Emulator:
                                                         np.exp(self.params["log_mean"]))
         return prediction, covariance   
     
-    def active_learning_step(self):
-        pass
         
     
     def chi2(self, model, data, cov):
@@ -138,12 +144,12 @@ class ActiveLearning(Emulator):
         self.ub = ubs
 
 
-    def active_learning_step(self, num_new=20, Ngrid=6):
+    def active_learning_step(self, num_new=20, Ngrid=6,normalize=True):
 
         # Iterate over the following N times:
         for n in range(num_new):
             # First we want to make a grid of parameter values
-            theta_grid = self.generate_theta(Ngrid, np.random.randint(0, 10000))
+            theta_grid = self.generate_theta(Ngrid, np.random.randint(0, 10000), normalize=normalize)
             test_stat = np.ones(len(theta_grid))
             
             # Now we iterate through each of the parameters in the grid, and test them 
@@ -182,9 +188,9 @@ class ActiveLearning(Emulator):
         # Remove the points we just added from the class
         self.Simulations.pop()
         self.Surrogates.pop()
-        return np.sum(np.diag(pred_varCP))
+        return np.sum(np.abs(np.diag(pred_varCP)))
 
-    def generate_theta(self, N, seed):
+    def generate_theta(self, N, seed, normalize=True):
         """
         Generates a grid of parameter values.
 
@@ -204,6 +210,8 @@ class ActiveLearning(Emulator):
         sampler = qmc.Sobol(d=self.param_dimensions, scramble=True, seed=seed)
         sample = sampler.random_base2(m=N)
         theta = qmc.scale(sample, self.lb, self.ub)
+        if normalize:
+            theta = (theta - self.lb) / (self.lb - self.ub) + 1
         return theta
     
     def find_nearest_island(self, parameters):
@@ -223,7 +231,10 @@ class ActiveLearning(Emulator):
         parameters = parameters.reshape(-1, self.param_dimensions)
         nearest_island = np.zeros_like(parameters)
         for i, pi in enumerate(parameters):
-            nearest_island[i] = self.Surrogate_locs[np.argmin(np.sum((pi - self.Surrogate_locs)**2, axis=1))]
+            if self.param_dimensions>1:
+                nearest_island[i] = self.Surrogate_locs[np.argmin(np.sum((pi[:-1] - self.Surrogate_locs[:, :-1])**2, axis=1))] # TODO: find a way to remove last axis for mass etc. 
+            else:
+                nearest_island[i] = self.Surrogate_locs[np.argmin((pi - self.Surrogate_locs)**2)] 
         return nearest_island
 
 

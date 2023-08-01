@@ -41,10 +41,10 @@ def build_CARPoolCov(params, theta, surrogate_theta, noise=0):
         return C
     
     # Build the noise fluctutaions
-    Mkernel =CARPoolKernels.EKernel(jnp.exp(params["log_ampM"]), jnp.exp(params["log_scaleM"]))
-    M       = Mkernel(theta, surrogate_theta)
-    IsigmaV = jnp.exp(params["log_jitterV"]) * jnp.eye(N_theta)
-    IsigmaW = jnp.exp(params["log_jitterW"]) * jnp.eye(N_surrogates)
+    Mkernel =CARPoolKernels.EKernel(jnp.exp(params["log_scaleM"]))
+    M       = Mkernel(theta, surrogate_theta) * jnp.sqrt(jnp.exp(params["log_jitterV"])**2 * jnp.exp(params["log_jitterW"])**2) * np.eye(N_theta, N_surrogates)
+    IsigmaV = jnp.exp(params["log_jitterV"])**2 * jnp.eye(N_theta)
+    IsigmaW = jnp.exp(params["log_jitterW"])**2 * jnp.eye(N_surrogates)
 
 
     noise = jnp.block([[IsigmaV, M], [M.T, IsigmaW]])
