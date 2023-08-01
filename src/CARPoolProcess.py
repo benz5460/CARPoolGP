@@ -42,7 +42,7 @@ def build_CARPoolCov(params, theta, surrogate_theta, noise=0):
     
     # Build the noise fluctutaions
     Mkernel =CARPoolKernels.EKernel(jnp.exp(params["log_scaleM"]))
-    M       = Mkernel(theta, surrogate_theta) * jnp.sqrt(jnp.exp(params["log_jitterV"])**2 * jnp.exp(params["log_jitterW"])**2) * np.eye(N_theta, N_surrogates)
+    M       = Mkernel(theta, surrogate_theta) * jnp.exp(params["log_jitterV"]) * jnp.exp(params["log_jitterW"]) * np.eye(N_theta, N_surrogates)
     IsigmaV = jnp.exp(params["log_jitterV"])**2 * jnp.eye(N_theta)
     IsigmaW = jnp.exp(params["log_jitterW"])**2 * jnp.eye(N_surrogates)
 
