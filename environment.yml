@@ -165,6 +165,5 @@ dependencies:
       - pyparsing==3.0.9
       - scienceplots==2.0.1
       - seaborn==0.12.2
-      - sklearn==0.0.post1
       - tinygp==0.2.3
 prefix: /opt/anaconda3/envs/jax

@@ -29,9 +29,9 @@ def build_CARPoolCov(params, theta, surrogate_theta, noise=0):
     N_surrogates = len(surrogate_theta)
 
     # Build Kernels with current parameter values
-    Vkernel = CARPoolKernels.VWKernel(jnp.exp(params["log_ampV"]), jnp.exp(params["log_scaleV"]))
-    Wkernel = CARPoolKernels.VWKernel(jnp.exp(params["log_ampW"]), jnp.exp(params["log_scaleW"]))
-    Xkernel =  CARPoolKernels.XKernel(jnp.exp(params["log_ampX"]), jnp.exp(params["log_scaleX"]), jnp.exp(params["log_deltaP"]))
+    Vkernel = CARPoolKernels.VWKernel(jnp.exp(params["log_ampV"]), params["scaleV"])
+    Wkernel = CARPoolKernels.VWKernel(jnp.exp(params["log_ampW"]), params["scaleV"])
+    Xkernel =  CARPoolKernels.XKernel(jnp.exp(params["log_ampX"]), params["scaleV"], jnp.exp(params["log_deltaP"]))
     V       = Vkernel(theta, theta)
     W       = Wkernel(surrogate_theta, surrogate_theta)
     X       = Xkernel(theta, surrogate_theta)
@@ -41,7 +41,7 @@ def build_CARPoolCov(params, theta, surrogate_theta, noise=0):
         return C
     
     # Build the noise fluctutaions
-    Mkernel =CARPoolKernels.EKernel(jnp.exp(params["log_scaleM"]))
+    Mkernel =CARPoolKernels.EKernel(params["scaleM"])
     M       = Mkernel(theta, surrogate_theta) * jnp.exp(params["log_jitterV"]) * jnp.exp(params["log_jitterW"]) * np.eye(N_theta, N_surrogates)
     IsigmaV = jnp.exp(params["log_jitterV"])**2 * jnp.eye(N_theta)
     IsigmaW = jnp.exp(params["log_jitterW"])**2 * jnp.eye(N_surrogates)

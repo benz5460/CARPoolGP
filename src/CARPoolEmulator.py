@@ -59,8 +59,8 @@ class Emulator:
     
             else:
                 params = self.params
-        
-        opt = optax.sgd(learning_rate=learning_rate)
+        #, momentum=0.9
+        opt = optax.sgd(learning_rate=learning_rate, momentum=0.5)
         opt_state = opt.init(params)
         self.param_evolution = []
         Y = jnp.concatenate([self.Simulations.quantities, self.Surrogates.quantities])
